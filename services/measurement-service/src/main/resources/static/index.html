@@ -184,6 +184,37 @@
     button:hover { transform: translateY(-1px); background: rgba(34, 211, 238, 0.16); }
     button:disabled { opacity: 0.55; cursor: wait; transform: none; }
 
+    .panel-actions {
+      display: flex;
+      align-items: end;
+      gap: 12px;
+    }
+
+    .device-filter {
+      display: grid;
+      gap: 5px;
+    }
+
+    .device-filter span {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .device-filter select {
+      min-width: 210px;
+      padding: 9px 36px 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      background: var(--surface-strong);
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; min-width: 760px; }
     th, td { padding: 16px 24px; text-align: left; border-bottom: 1px solid var(--border); }
@@ -264,8 +295,16 @@
           <h2>Senaste mätningar</h2>
           <p id="updatedAt" class="subtitle">Uppdateras automatiskt var 10:e sekund</p>
         </div>
+      <div class="panel-actions">
+        <label class="device-filter">
+          <span>Välj enhet</span>
+          <select id="deviceFilter">
+            <option value="">Alla enheter</option>
+          </select>
+        </label>
         <button id="refreshButton" type="button">Uppdatera</button>
-      </div>
+      </div>      
+    </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -288,89 +327,140 @@
   </main>
 
   <script>
-    const API_URL = "/api/measurements";
-    const rows = document.getElementById("measurementRows");
-    const refreshButton = document.getElementById("refreshButton");
+  const API_URL = "/api/measurements";
+  const rows = document.getElementById("measurementRows");
+  const refreshButton = document.getElementById("refreshButton");
+  const deviceFilter = document.getElementById("deviceFilter");
 
-    function formatTime(timestamp) {
-      if (!timestamp) return "—";
-      return new Intl.DateTimeFormat("sv-SE", {
-        dateStyle: "short",
-        timeStyle: "medium"
-      }).format(new Date(timestamp));
+  let allMeasurements = [];
+
+  function formatTime(timestamp) {
+    if (!timestamp) return "—";
+
+    return new Intl.DateTimeFormat("sv-SE", {
+      dateStyle: "short",
+      timeStyle: "medium"
+    }).format(new Date(timestamp));
+  }
+
+  function safe(value) {
+    const element = document.createElement("span");
+    element.textContent = value ?? "—";
+    return element.innerHTML;
+  }
+
+  function setOnline(isOnline) {
+    const dot = document.getElementById("statusDot");
+    dot.className = `dot ${isOnline ? "online" : "offline"}`;
+
+    document.getElementById("statusText").textContent = isOnline
+      ? "Measurement Service online"
+      : "Tjänsten kan inte nås";
+  }
+
+  function updateDeviceOptions(measurements) {
+    const previousSelection = deviceFilter.value;
+
+    const deviceIds = [...new Set(
+      measurements
+        .map(item => item.deviceId)
+        .filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b, "sv"));
+
+    deviceFilter.replaceChildren(
+      new Option("Alla enheter", ""),
+      ...deviceIds.map(deviceId => new Option(deviceId, deviceId))
+    );
+
+    if (deviceIds.includes(previousSelection)) {
+      deviceFilter.value = previousSelection;
+    }
+  }
+
+  function render(measurements) {
+    const selectedDevice = deviceFilter.value;
+
+    const filteredMeasurements = selectedDevice
+      ? measurements.filter(item => String(item.deviceId) === selectedDevice)
+      : measurements;
+
+    const sorted = [...filteredMeasurements].sort(
+      (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+    );
+
+    const latest = sorted[0];
+    const latestTemperature = sorted.find(
+      item => String(item.measurementType).toLowerCase() === "temperature"
+    );
+
+    document.getElementById("measurementCount").textContent = sorted.length;
+    document.getElementById("latestDevice").textContent =
+      latest?.deviceId ?? "—";
+    document.getElementById("latestType").textContent =
+      latest?.measurementType ?? "Väntar på data";
+
+    document.getElementById("latestTemperature").innerHTML = latestTemperature
+      ? `${safe(latestTemperature.value)}<span>°${safe(latestTemperature.unit ?? "C")}</span>`
+      : `—<span>°C</span>`;
+
+    document.getElementById("latestTime").textContent = latestTemperature
+      ? `Senast uppdaterad ${formatTime(latestTemperature.timestamp)}`
+      : "Ingen temperaturmätning ännu";
+
+    if (!sorted.length) {
+      rows.innerHTML =
+        '<tr><td colspan="5" class="empty">Inga mätningar finns för den valda enheten.</td></tr>';
+      return;
     }
 
-    function safe(value) {
-      const element = document.createElement("span");
-      element.textContent = value ?? "—";
-      return element.innerHTML;
-    }
+    rows.innerHTML = sorted.slice(0, 50).map(item => `
+      <tr>
+        <td>${safe(item.deviceId)}</td>
+        <td>${safe(item.measurementType)}</td>
+        <td class="value">${safe(item.value)} ${safe(item.unit)}</td>
+        <td>${safe(formatTime(item.timestamp))}</td>
+        <td><span class="badge">${safe(item.status ?? "RECEIVED")}</span></td>
+      </tr>
+    `).join("");
+  }
 
-    function setOnline(isOnline) {
-      const dot = document.getElementById("statusDot");
-      dot.className = `dot ${isOnline ? "online" : "offline"}`;
-      document.getElementById("statusText").textContent = isOnline
-        ? "Measurement Service online"
-        : "Tjänsten kan inte nås";
-    }
+  async function loadMeasurements() {
+    refreshButton.disabled = true;
 
-    function render(measurements) {
-      const sorted = [...measurements].sort(
-        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-      );
-      const latest = sorted[0];
-      const latestTemperature = sorted.find(
-        item => String(item.measurementType).toLowerCase() === "temperature"
-      );
+    try {
+      const response = await fetch(API_URL, { cache: "no-store" });
 
-      document.getElementById("measurementCount").textContent = sorted.length;
-      document.getElementById("latestDevice").textContent = latest?.deviceId ?? "—";
-      document.getElementById("latestType").textContent = latest?.measurementType ?? "Väntar på data";
-      document.getElementById("latestTemperature").innerHTML = latestTemperature
-        ? `${safe(latestTemperature.value)}<span>°${safe(latestTemperature.unit ?? "C")}</span>`
-        : `—<span>°C</span>`;
-      document.getElementById("latestTime").textContent = latestTemperature
-        ? `Senast uppdaterad ${formatTime(latestTemperature.timestamp)}`
-        : "Ingen temperaturmätning ännu";
-
-      if (!sorted.length) {
-        rows.innerHTML = '<tr><td colspan="5" class="empty">Inga mätningar har tagits emot ännu.</td></tr>';
-        return;
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
 
-      rows.innerHTML = sorted.slice(0, 50).map(item => `
-        <tr>
-          <td>${safe(item.deviceId)}</td>
-          <td>${safe(item.measurementType)}</td>
-          <td class="value">${safe(item.value)} ${safe(item.unit)}</td>
-          <td>${safe(formatTime(item.timestamp))}</td>
-          <td><span class="badge">${safe(item.status ?? "RECEIVED")}</span></td>
-        </tr>
-      `).join("");
-    }
+      const measurements = await response.json();
+      allMeasurements = Array.isArray(measurements) ? measurements : [];
 
-    async function loadMeasurements() {
-      refreshButton.disabled = true;
-      try {
-        const response = await fetch(API_URL, { cache: "no-store" });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const measurements = await response.json();
-        render(Array.isArray(measurements) ? measurements : []);
-        setOnline(true);
-        document.getElementById("updatedAt").textContent =
-          `Uppdaterad ${new Date().toLocaleTimeString("sv-SE")}`;
-      } catch (error) {
-        console.error(error);
-        setOnline(false);
-        rows.innerHTML = '<tr><td colspan="5" class="error">Kunde inte hämta mätningar från API:t.</td></tr>';
-      } finally {
-        refreshButton.disabled = false;
-      }
-    }
+      updateDeviceOptions(allMeasurements);
+      render(allMeasurements);
+      setOnline(true);
 
-    refreshButton.addEventListener("click", loadMeasurements);
-    loadMeasurements();
-    setInterval(loadMeasurements, 10_000);
-  </script>
+      document.getElementById("updatedAt").textContent =
+        `Uppdaterad ${new Date().toLocaleTimeString("sv-SE")}`;
+    } catch (error) {
+      console.error(error);
+      setOnline(false);
+      rows.innerHTML =
+        '<tr><td colspan="5" class="error">Kunde inte hämta mätningar från API:t.</td></tr>';
+    } finally {
+      refreshButton.disabled = false;
+    }
+  }
+
+  deviceFilter.addEventListener("change", () => {
+    render(allMeasurements);
+  });
+
+  refreshButton.addEventListener("click", loadMeasurements);
+
+  loadMeasurements();
+  setInterval(loadMeasurements, 10_000);
+</script>
 </body>
 </html>
