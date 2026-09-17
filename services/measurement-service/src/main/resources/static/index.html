@@ -273,8 +273,8 @@
 
     <section class="cards" aria-label="Översikt">
       <article class="card">
-        <p class="label">Senaste temperatur</p>
-        <p id="latestTemperature" class="temperature">—<span>°C</span></p>
+      <p id="latestValueLabel" class="label">Senaste mätvärde</p>
+      <p id="latestTemperature" class="temperature">—</p>
         <p id="latestTime" class="detail">Ingen mätning ännu</p>
       </article>
       <article class="card">
@@ -377,53 +377,119 @@
     }
   }
 
-  function render(measurements) {
-    const selectedDevice = deviceFilter.value;
+  function formatTypeLabel(type) {
+  const labels = {
+    temperature: "temperatur",
+    humidity: "luftfuktighet",
+    smoke: "röknivå",
+    motion: "rörelse",
+    door: "dörrstatus",
+    "water-leak": "vattenläcka"
+  };
 
-    const filteredMeasurements = selectedDevice
-      ? measurements.filter(item => String(item.deviceId) === selectedDevice)
-      : measurements;
+  const normalizedType = String(type ?? "").toLowerCase();
+  return labels[normalizedType] ?? type ?? "mätvärde";
+}
 
-    const sorted = [...filteredMeasurements].sort(
-      (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-    );
+function formatUnit(unit) {
+  const normalizedUnit = String(unit ?? "");
 
-    const latest = sorted[0];
-    const latestTemperature = sorted.find(
-      item => String(item.measurementType).toLowerCase() === "temperature"
-    );
+  if (normalizedUnit.toUpperCase() === "C") {
+    return "°C";
+  }
 
-    document.getElementById("measurementCount").textContent = sorted.length;
-    document.getElementById("latestDevice").textContent =
-      latest?.deviceId ?? "—";
-    document.getElementById("latestType").textContent =
-      latest?.measurementType ?? "Väntar på data";
+  return normalizedUnit;
+}
 
-    document.getElementById("latestTemperature").innerHTML = latestTemperature
-      ? `${safe(latestTemperature.value)}<span>°${safe(latestTemperature.unit ?? "C")}</span>`
-      : `—<span>°C</span>`;
 
-    document.getElementById("latestTime").textContent = latestTemperature
-      ? `Senast uppdaterad ${formatTime(latestTemperature.timestamp)}`
-      : "Ingen temperaturmätning ännu";
+function getMeasurementDisplay(measurement) {
+  const type = String(measurement?.measurementType ?? "").toLowerCase();
+  const value = Number(measurement?.value);
 
-    if (!sorted.length) {
-      rows.innerHTML =
-        '<tr><td colspan="5" class="empty">Inga mätningar finns för den valda enheten.</td></tr>';
-      return;
-    }
+  if (type === "door") {
+    if (value === 1) return { value: "ÖPPEN", unit: "" };
+    if (value === 0) return { value: "STÄNGD", unit: "" };
+  }
 
-    rows.innerHTML = sorted.slice(0, 50).map(item => `
+  if (type === "motion") {
+    if (value === 1) return { value: "RÖRELSE UPPTÄCKT", unit: "" };
+    if (value === 0) return { value: "INGEN RÖRELSE", unit: "" };
+  }
+
+  if (type === "water-leak") {
+    if (value === 1) return { value: "LÄCKA UPPTÄCKT", unit: "" };
+    if (value === 0) return { value: "INGEN LÄCKA", unit: "" };
+  }
+
+  return {
+    value: measurement?.value ?? "—",
+    unit: formatUnit(measurement?.unit)
+  };
+}
+function render(measurements) {
+  const selectedDevice = deviceFilter.value;
+
+  const filteredMeasurements = selectedDevice
+    ? measurements.filter(item => String(item.deviceId) === selectedDevice)
+    : measurements;
+
+  const sorted = [...filteredMeasurements].sort(
+    (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+  );
+
+  const latest = sorted[0];
+  const latestDisplay = latest
+    ? getMeasurementDisplay(latest)
+    : { value: "—", unit: "" };
+
+  document.getElementById("measurementCount").textContent = sorted.length;
+
+  document.getElementById("latestDevice").textContent =
+    latest?.deviceId ?? "—";
+
+  document.getElementById("latestType").textContent =
+    latest?.measurementType ?? "Väntar på data";
+
+  document.getElementById("latestValueLabel").textContent = latest
+    ? `Senaste ${formatTypeLabel(latest.measurementType)}`
+    : "Senaste mätvärde";
+
+  document.getElementById("latestTemperature").innerHTML =
+    `${safe(latestDisplay.value)}${
+      latestDisplay.unit
+        ? `<span>${safe(latestDisplay.unit)}</span>`
+        : ""
+    }`;
+
+  document.getElementById("latestTime").textContent = latest
+    ? `Senast uppdaterad ${formatTime(latest.timestamp)}`
+    : "Ingen mätning ännu";
+
+  if (!sorted.length) {
+    rows.innerHTML =
+      '<tr><td colspan="5" class="empty">Inga mätningar finns för den valda enheten.</td></tr>';
+    return;
+  }
+
+  rows.innerHTML = sorted.slice(0, 50).map(item => {
+    const display = getMeasurementDisplay(item);
+
+    return `
       <tr>
         <td>${safe(item.deviceId)}</td>
         <td>${safe(item.measurementType)}</td>
-        <td class="value">${safe(item.value)} ${safe(item.unit)}</td>
+        <td class="value">
+          ${safe(display.value)}
+          ${display.unit ? safe(display.unit) : ""}
+        </td>
         <td>${safe(formatTime(item.timestamp))}</td>
-        <td><span class="badge">${safe(item.status ?? "RECEIVED")}</span></td>
+        <td>
+          <span class="badge">${safe(item.status ?? "RECEIVED")}</span>
+        </td>
       </tr>
-    `).join("");
-  }
-
+    `;
+  }).join("");
+}
   async function loadMeasurements() {
     refreshButton.disabled = true;
 
