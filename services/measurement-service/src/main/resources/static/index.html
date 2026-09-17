@@ -401,6 +401,31 @@ function formatUnit(unit) {
   return normalizedUnit;
 }
 
+
+function getMeasurementDisplay(measurement) {
+  const type = String(measurement?.measurementType ?? "").toLowerCase();
+  const value = Number(measurement?.value);
+
+  if (type === "door") {
+    if (value === 1) return { value: "ÖPPEN", unit: "" };
+    if (value === 0) return { value: "STÄNGD", unit: "" };
+  }
+
+  if (type === "motion") {
+    if (value === 1) return { value: "RÖRELSE UPPTÄCKT", unit: "" };
+    if (value === 0) return { value: "INGEN RÖRELSE", unit: "" };
+  }
+
+  if (type === "water-leak") {
+    if (value === 1) return { value: "LÄCKA UPPTÄCKT", unit: "" };
+    if (value === 0) return { value: "INGEN LÄCKA", unit: "" };
+  }
+
+  return {
+    value: measurement?.value ?? "—",
+    unit: formatUnit(measurement?.unit)
+  };
+}
 function render(measurements) {
   const selectedDevice = deviceFilter.value;
 
@@ -413,10 +438,15 @@ function render(measurements) {
   );
 
   const latest = sorted[0];
+  const latestDisplay = latest
+    ? getMeasurementDisplay(latest)
+    : { value: "—", unit: "" };
 
   document.getElementById("measurementCount").textContent = sorted.length;
+
   document.getElementById("latestDevice").textContent =
     latest?.deviceId ?? "—";
+
   document.getElementById("latestType").textContent =
     latest?.measurementType ?? "Väntar på data";
 
@@ -424,9 +454,12 @@ function render(measurements) {
     ? `Senaste ${formatTypeLabel(latest.measurementType)}`
     : "Senaste mätvärde";
 
-  document.getElementById("latestTemperature").innerHTML = latest
-    ? `${safe(latest.value)}<span>${safe(formatUnit(latest.unit))}</span>`
-    : "—";
+  document.getElementById("latestTemperature").innerHTML =
+    `${safe(latestDisplay.value)}${
+      latestDisplay.unit
+        ? `<span>${safe(latestDisplay.unit)}</span>`
+        : ""
+    }`;
 
   document.getElementById("latestTime").textContent = latest
     ? `Senast uppdaterad ${formatTime(latest.timestamp)}`
@@ -438,28 +471,25 @@ function render(measurements) {
     return;
   }
 
-  rows.innerHTML = sorted.slice(0, 50).map(item => `
-    <tr>
-      <td>${safe(item.deviceId)}</td>
-      <td>${safe(item.measurementType)}</td>
-      <td class="value">${safe(item.value)} ${safe(item.unit)}</td>
-      <td>${safe(formatTime(item.timestamp))}</td>
-      <td><span class="badge">${safe(item.status ?? "RECEIVED")}</span></td>
-    </tr>
-  `).join("");
-}
+  rows.innerHTML = sorted.slice(0, 50).map(item => {
+    const display = getMeasurementDisplay(item);
 
-    rows.innerHTML = sorted.slice(0, 50).map(item => `
+    return `
       <tr>
         <td>${safe(item.deviceId)}</td>
         <td>${safe(item.measurementType)}</td>
-        <td class="value">${safe(item.value)} ${safe(item.unit)}</td>
+        <td class="value">
+          ${safe(display.value)}
+          ${display.unit ? safe(display.unit) : ""}
+        </td>
         <td>${safe(formatTime(item.timestamp))}</td>
-        <td><span class="badge">${safe(item.status ?? "RECEIVED")}</span></td>
+        <td>
+          <span class="badge">${safe(item.status ?? "RECEIVED")}</span>
+        </td>
       </tr>
-    `).join("");
-  }
-
+    `;
+  }).join("");
+}
   async function loadMeasurements() {
     refreshButton.disabled = true;
 
