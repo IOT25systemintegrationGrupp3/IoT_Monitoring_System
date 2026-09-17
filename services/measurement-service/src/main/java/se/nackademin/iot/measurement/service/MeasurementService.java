@@ -3,14 +3,17 @@ package se.nackademin.iot.measurement.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import se.nackademin.iot.measurement.entity.MeasurementEntity;
 import se.nackademin.iot.measurement.exception.MeasurementNotFoundException;
 import se.nackademin.iot.measurement.model.MeasurementRequest;
 import se.nackademin.iot.measurement.model.MeasurementResponse;
+import se.nackademin.iot.measurement.repository.MeasurementRepository;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class MeasurementService {
@@ -18,28 +21,36 @@ public class MeasurementService {
     private static final Logger logger =
             LoggerFactory.getLogger(MeasurementService.class);
 
-    private final Map<UUID, MeasurementResponse> measurements =
-            new ConcurrentHashMap<>();
+    private final MeasurementRepository measurementRepository;
 
+    public MeasurementService(MeasurementRepository measurementRepository) {
+        this.measurementRepository = measurementRepository;
+    }
+
+    @Transactional
     public MeasurementResponse create(MeasurementRequest request) {
         UUID measurementId = UUID.randomUUID();
         UUID correlationId = UUID.randomUUID();
 
-        MeasurementResponse measurement = new MeasurementResponse(
+        MeasurementEntity entity = new MeasurementEntity(
                 measurementId,
                 correlationId,
                 request.deviceId(),
                 request.measurementType(),
                 request.value(),
                 request.unit(),
-                request.timestamp(),
+                OffsetDateTime.ofInstant(
+                        request.timestamp(),
+                        ZoneOffset.UTC
+                ),
                 "RECEIVED"
         );
 
-        measurements.put(measurementId, measurement);
+        MeasurementEntity savedMeasurement =
+                measurementRepository.save(entity);
 
         logger.info(
-                "Measurement received: measurementId={}, correlationId={}, deviceId={}, type={}, value={}, unit={}",
+                "Measurement saved in SQL: measurementId={}, correlationId={}, deviceId={}, type={}, value={}, unit={}",
                 measurementId,
                 correlationId,
                 request.deviceId(),
@@ -48,25 +59,30 @@ public class MeasurementService {
                 request.unit()
         );
 
-        return measurement;
+        return savedMeasurement.toResponse();
     }
 
+    @Transactional(readOnly = true)
     public List<MeasurementResponse> findAll() {
-        return List.copyOf(measurements.values());
+        return measurementRepository
+                .findAllByOrderByMeasuredAtDesc()
+                .stream()
+                .map(MeasurementEntity::toResponse)
+                .toList();
     }
 
+    @Transactional(readOnly = true)
     public MeasurementResponse findById(UUID measurementId) {
-        MeasurementResponse measurement = measurements.get(measurementId);
+        return measurementRepository
+                .findById(measurementId)
+                .map(MeasurementEntity::toResponse)
+                .orElseThrow(() -> {
+                    logger.warn(
+                            "Measurement not found: measurementId={}",
+                            measurementId
+                    );
 
-        if (measurement == null) {
-            logger.warn(
-                    "Measurement not found: measurementId={}",
-                    measurementId
-            );
-
-            throw new MeasurementNotFoundException(measurementId);
-        }
-
-        return measurement;
+                    return new MeasurementNotFoundException(measurementId);
+                });
     }
 }
