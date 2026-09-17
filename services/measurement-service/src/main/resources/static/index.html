@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IoT Monitoring System</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --background: #07111f;
+      --surface: rgba(16, 30, 48, 0.82);
+      --surface-strong: #102033;
+      --border: rgba(148, 163, 184, 0.16);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --cyan: #22d3ee;
+      --blue: #3b82f6;
+      --green: #34d399;
+      --red: #fb7185;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(34, 211, 238, 0.14), transparent 30%),
+        radial-gradient(circle at 90% 15%, rgba(59, 130, 246, 0.13), transparent 28%),
+        var(--background);
+    }
+
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 42px 0 56px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      display: grid;
+      place-items: center;
+      width: 54px;
+      height: 54px;
+      border: 1px solid rgba(34, 211, 238, 0.34);
+      border-radius: 16px;
+      background: linear-gradient(145deg, rgba(34, 211, 238, 0.18), rgba(59, 130, 246, 0.16));
+      box-shadow: 0 0 36px rgba(34, 211, 238, 0.12);
+      font-size: 26px;
+    }
+
+    h1, h2, p { margin: 0; }
+    h1 { font-size: clamp(24px, 4vw, 34px); letter-spacing: -0.04em; }
+    .subtitle { margin-top: 5px; color: var(--muted); font-size: 14px; }
+
+    .service-status {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.72);
+      color: var(--muted);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--muted);
+      box-shadow: 0 0 0 5px rgba(148, 163, 184, 0.09);
+    }
+
+    .dot.online { background: var(--green); box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.1); }
+    .dot.offline { background: var(--red); box-shadow: 0 0 0 5px rgba(251, 113, 133, 0.1); }
+
+    .cards {
+      display: grid;
+      grid-template-columns: 1.35fr repeat(2, 1fr);
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .card, .panel {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .card {
+      min-height: 176px;
+      padding: 24px;
+      border-radius: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      right: -35px;
+      bottom: -55px;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: rgba(34, 211, 238, 0.08);
+      filter: blur(8px);
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .temperature {
+      margin-top: 17px;
+      font-size: clamp(44px, 7vw, 66px);
+      font-weight: 750;
+      line-height: 1;
+      letter-spacing: -0.06em;
+    }
+
+    .temperature span { color: var(--cyan); font-size: 0.48em; vertical-align: top; }
+
+    .metric {
+      margin-top: 22px;
+      font-size: 30px;
+      font-weight: 720;
+      letter-spacing: -0.04em;
+    }
+
+    .detail { margin-top: 10px; color: var(--muted); font-size: 14px; }
+
+    .panel { border-radius: 22px; overflow: hidden; }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h2 { font-size: 18px; letter-spacing: -0.02em; }
+
+    button {
+      appearance: none;
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      border-radius: 12px;
+      padding: 9px 14px;
+      color: #dffaff;
+      background: rgba(34, 211, 238, 0.09);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: 160ms ease;
+    }
+
+    button:hover { transform: translateY(-1px); background: rgba(34, 211, 238, 0.16); }
+    button:disabled { opacity: 0.55; cursor: wait; transform: none; }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { padding: 16px 24px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+    td { font-size: 14px; }
+    tbody tr { transition: background 140ms ease; }
+    tbody tr:hover { background: rgba(148, 163, 184, 0.045); }
+    tbody tr:last-child td { border-bottom: 0; }
+
+    .value { color: var(--cyan); font-weight: 750; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      color: #9ef5d1;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.18);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .empty, .error {
+      padding: 44px 24px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    footer { margin-top: 18px; color: #64748b; font-size: 12px; text-align: right; }
+
+    @media (max-width: 780px) {
+      .container { width: min(100% - 22px, 1180px); padding-top: 24px; }
+      header { align-items: flex-start; flex-direction: column; }
+      .cards { grid-template-columns: 1fr; }
+      .card { min-height: 150px; }
+      .panel-header { padding: 18px; }
+      th, td { padding: 14px 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true">⌁</div>
+        <div>
+          <h1>IoT Monitoring System</h1>
+          <p class="subtitle">Measurement Service · Azure</p>
+        </div>
+      </div>
+      <div class="service-status">
+        <span id="statusDot" class="dot"></span>
+        <span id="statusText">Kontrollerar tjänsten…</span>
+      </div>
+    </header>
+
+    <section class="cards" aria-label="Översikt">
+      <article class="card">
+        <p class="label">Senaste temperatur</p>
+        <p id="latestTemperature" class="temperature">—<span>°C</span></p>
+        <p id="latestTime" class="detail">Ingen mätning ännu</p>
+      </article>
+      <article class="card">
+        <p class="label">Antal mätningar</p>
+        <p id="measurementCount" class="metric">0</p>
+        <p class="detail">Mottagna i aktuell körning</p>
+      </article>
+      <article class="card">
+        <p class="label">Senaste enhet</p>
+        <p id="latestDevice" class="metric">—</p>
+        <p id="latestType" class="detail">Väntar på data</p>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2>Senaste mätningar</h2>
+          <p id="updatedAt" class="subtitle">Uppdateras automatiskt var 10:e sekund</p>
+        </div>
+        <button id="refreshButton" type="button">Uppdatera</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Enhet</th>
+              <th>Typ</th>
+              <th>Värde</th>
+              <th>Tidpunkt</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="measurementRows">
+            <tr><td colspan="5" class="empty">Hämtar mätningar…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>IoT25 · Grupp 3</footer>
+  </main>
+
+  <script>
+    const API_URL = "/api/measurements";
+    const rows = document.getElementById("measurementRows");
+    const refreshButton = document.getElementById("refreshButton");
+
+    function formatTime(timestamp) {
+      if (!timestamp) return "—";
+      return new Intl.DateTimeFormat("sv-SE", {
+        dateStyle: "short",
+        timeStyle: "medium"
+      }).format(new Date(timestamp));
+    }
+
+    function safe(value) {
+      const element = document.createElement("span");
+      element.textContent = value ?? "—";
+      return element.innerHTML;
+    }
+
+    function setOnline(isOnline) {
+      const dot = document.getElementById("statusDot");
+      dot.className = `dot ${isOnline ? "online" : "offline"}`;
+      document.getElementById("statusText").textContent = isOnline
+        ? "Measurement Service online"
+        : "Tjänsten kan inte nås";
+    }
+
+    function render(measurements) {
+      const sorted = [...measurements].sort(
+        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+      );
+      const latest = sorted[0];
+      const latestTemperature = sorted.find(
+        item => String(item.measurementType).toLowerCase() === "temperature"
+      );
+
+      document.getElementById("measurementCount").textContent = sorted.length;
+      document.getElementById("latestDevice").textContent = latest?.deviceId ?? "—";
+      document.getElementById("latestType").textContent = latest?.measurementType ?? "Väntar på data";
+      document.getElementById("latestTemperature").innerHTML = latestTemperature
+        ? `${safe(latestTemperature.value)}<span>°${safe(latestTemperature.unit ?? "C")}</span>`
+        : `—<span>°C</span>`;
+      document.getElementById("latestTime").textContent = latestTemperature
+        ? `Senast uppdaterad ${formatTime(latestTemperature.timestamp)}`
+        : "Ingen temperaturmätning ännu";
+
+      if (!sorted.length) {
+        rows.innerHTML = '<tr><td colspan="5" class="empty">Inga mätningar har tagits emot ännu.</td></tr>';
+        return;
+      }
+
+      rows.innerHTML = sorted.slice(0, 50).map(item => `
+        <tr>
+          <td>${safe(item.deviceId)}</td>
+          <td>${safe(item.measurementType)}</td>
+          <td class="value">${safe(item.value)} ${safe(item.unit)}</td>
+          <td>${safe(formatTime(item.timestamp))}</td>
+          <td><span class="badge">${safe(item.status ?? "RECEIVED")}</span></td>
+        </tr>
+      `).join("");
+    }
+
+    async function loadMeasurements() {
+      refreshButton.disabled = true;
+      try {
+        const response = await fetch(API_URL, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const measurements = await response.json();
+        render(Array.isArray(measurements) ? measurements : []);
+        setOnline(true);
+        document.getElementById("updatedAt").textContent =
+          `Uppdaterad ${new Date().toLocaleTimeString("sv-SE")}`;
+      } catch (error) {
+        console.error(error);
+        setOnline(false);
+        rows.innerHTML = '<tr><td colspan="5" class="error">Kunde inte hämta mätningar från API:t.</td></tr>';
+      } finally {
+        refreshButton.disabled = false;
+      }
+    }
+
+    refreshButton.addEventListener("click", loadMeasurements);
+    loadMeasurements();
+    setInterval(loadMeasurements, 10_000);
+  </script>
+</body>
+</html>
