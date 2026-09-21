@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    targetNamespace="http://iotmonitoring.com/alarm"
+    xmlns:tns="http://iotmonitoring.com/alarm"
+    elementFormDefault="qualified">
+
+    <xs:element name="ProcessMeasurementRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="deviceId" type="xs:string"/>
+                <xs:element name="measurementType" type="xs:string"/>
+                <xs:element name="value" type="xs:double"/>
+                <xs:element name="unit" type="xs:string"/>
+                <xs:element name="timestamp" type="xs:dateTime"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="ProcessMeasurementResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="success" type="xs:boolean"/>
+                <xs:element name="alarmCreated" type="xs:boolean"/>
+                <xs:element name="alarmId" type="xs:string" minOccurs="0"/>
+                <xs:element name="message" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="GetAlarmRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="alarmId" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="GetAlarmResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="success" type="xs:boolean"/>
+                <xs:element name="alarmId" type="xs:string"/>
+                <xs:element name="deviceId" type="xs:string"/>
+                <xs:element name="measurementType" type="xs:string"/>
+                <xs:element name="value" type="xs:double"/>
+                <xs:element name="threshold" type="xs:double"/>
+                <xs:element name="message" type="xs:string"/>
+                <xs:element name="timestamp" type="xs:dateTime"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="GetThresholdRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="measurementType" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="GetThresholdResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="success" type="xs:boolean"/>
+                <xs:element name="measurementType" type="xs:string"/>
+                <xs:element name="unit" type="xs:string"/>
+                <xs:element name="maximumThreshold" type="xs:double"/>
+                <xs:element name="minimumThreshold" type="xs:double"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="AlarmFault">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="code" type="xs:string"/>
+                <xs:element name="message" type="xs:string"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>
