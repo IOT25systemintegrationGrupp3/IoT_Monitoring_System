@@ -384,7 +384,10 @@
     smoke: "röknivå",
     motion: "rörelse",
     door: "dörrstatus",
-    "water-leak": "vattenläcka"
+    distance: "dörrstatus",
+    "water-leak": "vattenläcka",
+    "water_leak": "vattenläcka"
+
   };
 
   const normalizedType = String(type ?? "").toLowerCase();
@@ -406,6 +409,20 @@ function getMeasurementDisplay(measurement) {
   const type = String(measurement?.measurementType ?? "").toLowerCase();
   const value = Number(measurement?.value);
 
+  if (type === "distance") {
+  if (value < 10) {
+    return {
+      value: `ÖPPEN (${value.toFixed(1)} cm)`,
+      unit: ""
+    };
+  } else {
+    return {
+      value: `STÄNGD (${value.toFixed(1)} cm)`,
+      unit: ""
+    };
+  }
+}
+
   if (type === "door") {
     if (value === 1) return { value: "ÖPPEN", unit: "" };
     if (value === 0) return { value: "STÄNGD", unit: "" };
@@ -416,7 +433,7 @@ function getMeasurementDisplay(measurement) {
     if (value === 0) return { value: "INGEN RÖRELSE", unit: "" };
   }
 
-  if (type === "water-leak") {
+  if (type === "water-leak" || type === "water_leak") {
     if (value === 1) return { value: "LÄCKA UPPTÄCKT", unit: "" };
     if (value === 0) return { value: "INGEN LÄCKA", unit: "" };
   }
