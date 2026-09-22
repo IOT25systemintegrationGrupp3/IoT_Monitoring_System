@@ -10,3 +10,4 @@ JSON data att sckicka
   "unit": "%",
   "timestamp": "2026-09-16T12:00:00Z"
 }
+ss
