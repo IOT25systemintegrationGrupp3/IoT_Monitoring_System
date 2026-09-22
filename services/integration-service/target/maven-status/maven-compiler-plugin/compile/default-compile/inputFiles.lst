@@ -1,0 +1,17 @@
+C:\IoT-monitoring\integration-service\src\main\java\com\iotmonitoring\integration_service\config\RestClientConfig.java
+C:\IoT-monitoring\integration-service\src\main\java\com\iotmonitoring\integration_service\config\SoapClientConfig.java
+C:\IoT-monitoring\integration-service\src\main\java\com\iotmonitoring\integration_service\controller\IntegrationController.java
+C:\IoT-monitoring\integration-service\src\main\java\com\iotmonitoring\integration_service\dto\MeasurementRequest.java
+C:\IoT-monitoring\integration-service\src\main\java\com\iotmonitoring\integration_service\exception\AlarmServiceUnavailableException.java
+C:\IoT-monitoring\integration-service\src\main\java\com\iotmonitoring\integration_service\exception\DeviceNotRegisteredException.java
+C:\IoT-monitoring\integration-service\src\main\java\com\iotmonitoring\integration_service\IntegrationServiceApplication.java
+C:\IoT-monitoring\integration-service\src\main\java\com\iotmonitoring\integration_service\service\AlarmSoapClient.java
+C:\IoT-monitoring\integration-service\src\main\java\com\iotmonitoring\integration_service\service\MeasurementForwardingService.java
+C:\IoT-monitoring\integration-service\target\generated-sources\jaxb\com\iotmonitoring\integration_service\alarm\ws\GetAlarmRequestType.java
+C:\IoT-monitoring\integration-service\target\generated-sources\jaxb\com\iotmonitoring\integration_service\alarm\ws\GetAlarmResponseType.java
+C:\IoT-monitoring\integration-service\target\generated-sources\jaxb\com\iotmonitoring\integration_service\alarm\ws\GetThresholdRequestType.java
+C:\IoT-monitoring\integration-service\target\generated-sources\jaxb\com\iotmonitoring\integration_service\alarm\ws\GetThresholdResponseType.java
+C:\IoT-monitoring\integration-service\target\generated-sources\jaxb\com\iotmonitoring\integration_service\alarm\ws\ObjectFactory.java
+C:\IoT-monitoring\integration-service\target\generated-sources\jaxb\com\iotmonitoring\integration_service\alarm\ws\package-info.java
+C:\IoT-monitoring\integration-service\target\generated-sources\jaxb\com\iotmonitoring\integration_service\alarm\ws\ProcessMeasurementRequestType.java
+C:\IoT-monitoring\integration-service\target\generated-sources\jaxb\com\iotmonitoring\integration_service\alarm\ws\ProcessMeasurementResponseType.java
