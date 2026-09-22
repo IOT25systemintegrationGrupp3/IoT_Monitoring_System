@@ -1,0 +1,17 @@
+com\iotmonitoring\integration_service\config\SoapClientConfig.class
+com\iotmonitoring\integration_service\dto\MeasurementRequest.class
+com\iotmonitoring\integration_service\alarm\ws\GetThresholdResponseType.class
+com\iotmonitoring\integration_service\IntegrationServiceApplication.class
+com\iotmonitoring\integration_service\config\RestClientConfig.class
+com\iotmonitoring\integration_service\alarm\ws\ProcessMeasurementRequestType.class
+com\iotmonitoring\integration_service\alarm\ws\package-info.class
+com\iotmonitoring\integration_service\alarm\ws\GetAlarmResponseType.class
+com\iotmonitoring\integration_service\alarm\ws\ObjectFactory.class
+com\iotmonitoring\integration_service\alarm\ws\GetAlarmRequestType.class
+com\iotmonitoring\integration_service\controller\IntegrationController.class
+com\iotmonitoring\integration_service\exception\DeviceNotRegisteredException.class
+com\iotmonitoring\integration_service\service\MeasurementForwardingService.class
+com\iotmonitoring\integration_service\service\AlarmSoapClient.class
+com\iotmonitoring\integration_service\exception\AlarmServiceUnavailableException.class
+com\iotmonitoring\integration_service\alarm\ws\ProcessMeasurementResponseType.class
+com\iotmonitoring\integration_service\alarm\ws\GetThresholdRequestType.class

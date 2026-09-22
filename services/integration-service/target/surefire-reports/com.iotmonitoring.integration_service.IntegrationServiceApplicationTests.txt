@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.iotmonitoring.integration_service.IntegrationServiceApplicationTests
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.067 s -- in com.iotmonitoring.integration_service.IntegrationServiceApplicationTests
