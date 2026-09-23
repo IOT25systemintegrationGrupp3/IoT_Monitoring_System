@@ -21,11 +21,16 @@ public class MeasurementService {
     private static final Logger logger =
             LoggerFactory.getLogger(MeasurementService.class);
 
-    private final MeasurementRepository measurementRepository;
+   private final MeasurementRepository measurementRepository;
+private final IntegrationServiceClient integrationServiceClient;
 
-    public MeasurementService(MeasurementRepository measurementRepository) {
-        this.measurementRepository = measurementRepository;
-    }
+public MeasurementService(
+        MeasurementRepository measurementRepository,
+        IntegrationServiceClient integrationServiceClient) {
+
+    this.measurementRepository = measurementRepository;
+    this.integrationServiceClient = integrationServiceClient;
+}
 
     @Transactional
     public MeasurementResponse create(MeasurementRequest request) {
@@ -58,6 +63,8 @@ public class MeasurementService {
                 request.value(),
                 request.unit()
         );
+
+        integrationServiceClient.sendMeasurement(request, correlationId);
 
         return savedMeasurement.toResponse();
     }
