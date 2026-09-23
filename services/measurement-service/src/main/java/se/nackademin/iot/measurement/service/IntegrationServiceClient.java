@@ -19,11 +19,10 @@ public class IntegrationServiceClient {
     private final RestClient restClient;
 
     public IntegrationServiceClient(
-            RestClient.Builder restClientBuilder,
             @Value("${INTEGRATION_SERVICE_URL:http://localhost:8081}")
             String integrationServiceUrl) {
 
-        this.restClient = restClientBuilder
+        this.restClient = RestClient.builder()
                 .baseUrl(integrationServiceUrl)
                 .build();
     }
