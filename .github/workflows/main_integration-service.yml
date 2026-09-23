@@ -6,9 +6,6 @@
 name: Build and deploy JAR app to Azure Web App - integration-service
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
