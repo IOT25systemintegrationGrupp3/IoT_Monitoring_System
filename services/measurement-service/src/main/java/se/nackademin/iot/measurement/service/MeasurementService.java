@@ -21,19 +21,20 @@ public class MeasurementService {
     private static final Logger logger =
             LoggerFactory.getLogger(MeasurementService.class);
 
-   private final MeasurementRepository measurementRepository;
-private final IntegrationServiceClient integrationServiceClient;
+    private final MeasurementRepository measurementRepository;
+    private final IntegrationServiceClient integrationServiceClient;
 
-public MeasurementService(
-        MeasurementRepository measurementRepository,
-        IntegrationServiceClient integrationServiceClient) {
+    public MeasurementService(
+            MeasurementRepository measurementRepository,
+            IntegrationServiceClient integrationServiceClient) {
 
-    this.measurementRepository = measurementRepository;
-    this.integrationServiceClient = integrationServiceClient;
-}
+        this.measurementRepository = measurementRepository;
+        this.integrationServiceClient = integrationServiceClient;
+    }
 
     @Transactional
     public MeasurementResponse create(MeasurementRequest request) {
+
         UUID measurementId = UUID.randomUUID();
         UUID correlationId = UUID.randomUUID();
 
@@ -64,7 +65,26 @@ public MeasurementService(
                 request.unit()
         );
 
-        integrationServiceClient.sendMeasurement(request, correlationId);
+        try {
+            integrationServiceClient.sendMeasurement(
+                    request,
+                    correlationId
+            );
+
+        } catch (Exception e) {
+
+            logger.error(
+                    "Failed to send measurement to Integration Service: correlationId={}, deviceId={}",
+                    correlationId,
+                    request.deviceId(),
+                    e
+            );
+
+            // The measurement is already saved.
+            // Do not let an Integration Service failure
+            // prevent the Measurement Service from returning
+            // the saved measurement.
+        }
 
         return savedMeasurement.toResponse();
     }
