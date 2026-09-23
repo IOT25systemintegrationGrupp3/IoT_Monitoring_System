@@ -70,6 +70,12 @@
         </dependency>
     </dependencies>
 
+         <!-- Logging -->
+<dependency>
+    <groupId>ch.qos.logback</groupId>
+    <artifactId>logback-classic</artifactId>
+</dependency>
+
     <build>
         <plugins>
             <plugin>
