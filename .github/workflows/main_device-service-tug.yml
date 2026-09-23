@@ -28,14 +28,14 @@ jobs:
           distribution: 'microsoft'
 
       - name: Build with Maven
-        working-directory: ./device-service
+        working-directory: ./services/device-service
         run: mvn clean package -DskipTests
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: java-app
-          path: '${{ github.workspace }}/device-service/target/*.jar'
+          path: '${{ github.workspace }}/services/device-service/target/*.jar'
 
   deploy:
     runs-on: ubuntu-latest
