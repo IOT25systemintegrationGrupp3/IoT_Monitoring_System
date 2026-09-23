@@ -12,20 +12,22 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.GregorianCalendar;
-import java.util.List;
 import java.util.Map;
 
 @Service
 public class AlarmService {
 
     private static final ZoneId STOCKHOLM = ZoneId.of("Europe/Stockholm");
+
     private static final Map<String, ThresholdRule> RULES = Map.of(
-            "water_leak", new ThresholdRule("boolean", 1.0, 0.0, 1.0)
+            "water_leak", new ThresholdRule("boolean", 1.0, 0.0, 1.0),
+            "temperature", new ThresholdRule("C", 30.0, Double.NEGATIVE_INFINITY, 30.0),
+            "humidity", new ThresholdRule("%", 80.0, Double.NEGATIVE_INFINITY, 80.0),
+            "distance", new ThresholdRule("cm", Double.POSITIVE_INFINITY, 10.0, 10.0)
     );
 
     private final AlarmRepository repository;
@@ -43,31 +45,40 @@ public class AlarmService {
 
         validateMeasurement(deviceId, measurementType, unit, timestamp);
         ThresholdRule rule = ruleFor(measurementType);
+
         ProcessMeasurementResponseType response = new ProcessMeasurementResponseType();
         response.setSuccess(true);
         response.setAlarmCreated(false);
         response.setMessage("Measurement is within the allowed threshold");
 
-        if ("water_leak".equalsIgnoreCase(measurementType) && value == 1.0d) {
+        boolean alarmTriggered;
+
+        if ("water_leak".equalsIgnoreCase(measurementType)) {
+            alarmTriggered = value == 1.0d;
+        } else if ("distance".equalsIgnoreCase(measurementType)) {
+            alarmTriggered = value <= rule.minimumThreshold();
+        } else {
+            alarmTriggered = value >= rule.maximumThreshold();
+        }
+
+        if (alarmTriggered) {
+            String message = "water_leak".equalsIgnoreCase(measurementType)
+                    ? "Water leak detected"
+                    : "distance".equalsIgnoreCase(measurementType)
+                    ? "Distance is below the allowed threshold"
+                    : measurementType + " exceeds the allowed threshold";
+
             Alarm alarm = repository.save(new Alarm(
                     deviceId, measurementType, value, unit,
                     Alarm.Severity.CRITICAL, Alarm.Status.ACTIVE,
-                    "Water leak detected", timestamp, nowInStockholm()));
-                    alarmEmailService.sendAlarmNotification(alarm);
-            response.setAlarmCreated(true);
-            response.setAlarmId(String.valueOf(alarm.getAlarmId()));
-            response.setMessage(alarm.getMessage());
-        } else if (value > rule.maximumThreshold() || value < rule.minimumThreshold()) {
-            Alarm alarm = repository.save(new Alarm(
-                    deviceId, measurementType, value, unit,
-                    Alarm.Severity.CRITICAL, Alarm.Status.ACTIVE,
-                    measurementType + " exceeds the allowed threshold",
-                    timestamp, nowInStockholm()));
-                    alarmEmailService.sendAlarmNotification(alarm);
+                    message, timestamp, nowInStockholm()));
+
+            alarmEmailService.sendAlarmNotification(alarm);
             response.setAlarmCreated(true);
             response.setAlarmId(String.valueOf(alarm.getAlarmId()));
             response.setMessage(alarm.getMessage());
         }
+
         return response;
     }
 
@@ -114,7 +125,8 @@ public class AlarmService {
         }
         ThresholdRule rule = RULES.get(measurementType.toLowerCase());
         if (rule == null) {
-            throw new AlarmValidationException("UNSUPPORTED_MEASUREMENT_TYPE", "Unsupported measurement type: " + measurementType);
+            throw new AlarmValidationException("UNSUPPORTED_MEASUREMENT_TYPE",
+                    "Unsupported measurement type: " + measurementType);
         }
         return rule;
     }
