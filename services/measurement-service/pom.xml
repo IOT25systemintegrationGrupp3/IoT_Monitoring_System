@@ -23,6 +23,7 @@
     </properties>
 
     <dependencies>
+
         <!-- REST API -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -48,6 +49,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Logging -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+
         <!-- REST API tests -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -68,13 +75,8 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
-    </dependencies>
 
-         <!-- Logging -->
-<dependency>
-    <groupId>ch.qos.logback</groupId>
-    <artifactId>logback-classic</artifactId>
-</dependency>
+    </dependencies>
 
     <build>
         <plugins>
