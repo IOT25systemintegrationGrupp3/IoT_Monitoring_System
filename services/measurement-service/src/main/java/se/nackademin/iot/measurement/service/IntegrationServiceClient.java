@@ -28,16 +28,18 @@ public class IntegrationServiceClient {
     }
 
     public void sendMeasurement(
-            MeasurementRequest request,
-            UUID correlationId) {
+        MeasurementRequest request,
+        UUID correlationId) {
 
-        logger.info(
-                "Sending measurement to Integration Service: correlationId={}, deviceId={}, type={}, value={}",
-                correlationId,
-                request.deviceId(),
-                request.measurementType(),
-                request.value()
-        );
+    logger.info(
+            "Sending measurement to Integration Service: correlationId={}, deviceId={}, type={}, value={}",
+            correlationId,
+            request.deviceId(),
+            request.measurementType(),
+            request.value()
+    );
+
+    try {
 
         restClient.post()
                 .uri("/api/integration/measurements")
@@ -51,5 +53,16 @@ public class IntegrationServiceClient {
                 "Measurement successfully sent to Integration Service: correlationId={}",
                 correlationId
         );
+
+    } catch (Exception e) {
+
+        logger.error(
+                "Failed to send measurement to Integration Service: correlationId={}, error={}",
+                correlationId,
+                e.getMessage(),
+                e
+        );
+
+        throw e;
     }
 }
