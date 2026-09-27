@@ -1,6 +1,4 @@
-package se.nackademin.iot.alarm;
-
-import java.util.Properties;
+package se.nackademin.iot.alarm.config;
 
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.ApplicationContext;
@@ -8,8 +6,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.ws.config.annotation.EnableWs;
-import org.springframework.ws.soap.server.endpoint.SoapFaultDefinition;
-import org.springframework.ws.soap.server.endpoint.SoapFaultMappingExceptionResolver;
 import org.springframework.ws.transport.http.MessageDispatcherServlet;
 import org.springframework.ws.wsdl.wsdl11.SimpleWsdl11Definition;
 import org.springframework.ws.wsdl.wsdl11.Wsdl11Definition;
@@ -42,33 +38,5 @@ public class WebServiceConfig {
                         "wsdl/alarm_v1.wsdl"
                 )
         );
-    }
-
-    @Bean
-    public SoapFaultMappingExceptionResolver exceptionResolver() {
-
-        SoapFaultMappingExceptionResolver resolver =
-                new SoapFaultMappingExceptionResolver();
-
-        SoapFaultDefinition faultDefinition =
-                new SoapFaultDefinition();
-
-        faultDefinition.setFaultCode(
-                SoapFaultDefinition.CLIENT
-        );
-
-        resolver.setDefaultFault(faultDefinition);
-
-        Properties mappings = new Properties();
-
-        mappings.setProperty(
-                IllegalArgumentException.class.getName(),
-                SoapFaultDefinition.CLIENT.toString()
-        );
-
-        resolver.setExceptionMappings(mappings);
-        resolver.setOrder(1);
-
-        return resolver;
     }
 }
